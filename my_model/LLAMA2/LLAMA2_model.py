@@ -3,7 +3,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 from typing import Optional
 import bitsandbytes  # only for using on GPU
 import accelerate  # only for using on GPU
-import LLAMA2_config as config  # Importing LLAMA2 configuration file
+from my_model.LLAMA2 import LLAMA2_config as config  # Importing LLAMA2 configuration file
 import warnings
 
 # Suppress only FutureWarning from transformers
@@ -111,36 +111,58 @@ class Llama2ModelManager:
 
         return self.tokenizer
 
-    def add_special_tokens(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer,
-                           tokens: Optional[list[str]] = None) -> None:
+    def load_model_and_tokenizer(self, for_fine_tuning):
         """
-        Adds special tokens to the tokenizer and updates the model's token embeddings.
+        Loads LLAMa2 model and tokenizer in one method and adds special tokens if the purpose if fine tuning.
+        :param for_fine_tuning: YES(True) / NO (False)
+        :return: LLAMA2 Model and Tokenizer
+        """
+        if for_fine_tuning:
+            self.tokenizer = self.load_tokenizer()
+            self.model = self.load_model()
+            self.add_special_tokens()
+        else:
+            self.tokenizer = self.load_tokenizer()
+            self.model = self.load_model()
+
+        return self.model, self.tokenizer
+
+
+    def add_special_tokens(self, tokens: Optional[list[str]] = None) -> None:
+        """
+        Adds special tokens to the tokenizer and updates the model's token embeddings if the model is loaded,
+        only if the tokenizer is loaded.
 
         Args:
-            model (AutoModelForCausalLM): The LLaMA-2 model.
-            tokenizer (AutoTokenizer): The tokenizer for the model.
             tokens (list of str, optional): Special tokens to add. Defaults to a predefined set.
 
         Returns:
             None
         """
+        if self.tokenizer is None:
+            print("Tokenizer is not loaded. Cannot add special tokens.")
+            return
+
         if tokens is None:
             tokens = ['[CAP]', '[/CAP]', '[QES]', '[/QES]', '[OBJ]', '[/OBJ]']
-        print(f'Model and Tokenizer vocabulary size is: {len(tokenizer)}')
+
+        # Update the tokenizer with new tokens
+        print(f"Original vocabulary size: {len(self.tokenizer)}")
         print(f"Adding the following tokens: {tokens}")
-        tokenizer.add_tokens(tokens, special_tokens=True)
+        self.tokenizer.add_tokens(tokens, special_tokens=True)
+        self.tokenizer.add_special_tokens({'pad_token': '<pad>'})
+        print(f"Adding Padding Token {self.tokenizer.pad_token}")
+        self.tokenizer.padding_side = "right"
+        print(f'Padding side: {self.tokenizer.padding_side}')
 
-        tokenizer.add_special_tokens({'pad_token': '<pad>'})
-        print(f"Adding Padding Token {tokenizer.pad_token}")
-        tokenizer.padding_side = "right"
-        print(f'Padding side: {tokenizer.padding_side}')
+        # Resize the model token embeddings if the model is loaded
+        if self.model is not None:
+            self.model.resize_token_embeddings(len(self.tokenizer))
+            self.model.config.pad_token_id = self.tokenizer.pad_token_id
 
-        model.config.pad_token_id = tokenizer.pad_token_id
-        model.resize_token_embeddings(len(tokenizer))
-
-        print(f'New Vocabulary Size for Model and Tokenizer is: {len(tokenizer)}')
-        print(f'Padding Token is: {tokenizer.pad_token}')
-        print(f'Special Tokens: {tokenizer.added_tokens_decoder}')
+        print(f'Updated Vocabulary Size: {len(self.tokenizer)}')
+        print(f'Padding Token: {self.tokenizer.pad_token}')
+        print(f'Special Tokens: {self.tokenizer.added_tokens_decoder}')
 
 
 if __name__ == "__main__":
