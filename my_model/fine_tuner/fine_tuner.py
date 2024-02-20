@@ -1,5 +1,5 @@
 
-#   Main Fine-Tuning Script for Large Language Models (LLMs)
+#   Main Fine-Tuning Script for meta-llama/Llama-2-7b-chat-hf
 
 #   This script is the central executable for fine-tuning large language models, specifically designed for the LLAMA2
 #   model.
@@ -18,6 +18,9 @@
 #   Ensure all dependencies are installed and the required files are in place before running this script.
 #   The configurations for the fine-tuning process are defined in the 'fine_tuning_config.py' file.
 
+#   ---------- Please run this file for the full fine-tuning process to start ----------#
+#   ---------- Please ensure this is run on a GPU ----------#
+
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, TRANSFORMERS_CACHE
@@ -26,7 +29,7 @@ from datasets import Dataset, load_dataset
 from peft import LoraConfig, prepare_model_for_kbit_training, PeftModel
 import fine_tuning_config as config
 from typing import List
-import bitsandbytes
+import bitsandbytes  # only on GPU
 import gc
 import os
 import shutil

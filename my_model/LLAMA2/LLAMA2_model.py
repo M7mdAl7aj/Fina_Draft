@@ -166,6 +166,7 @@ class Llama2ModelManager:
 
 
 if __name__ == "__main__":
+    pass
     LLAMA2_manager = Llama2ModelManager()
     LLAMA2_model = LLAMA2_manager.load_model()  # First time loading the model
     LLAMA2_tokenizer = LLAMA2_manager.load_tokenizer()
